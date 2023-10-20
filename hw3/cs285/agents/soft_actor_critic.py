@@ -147,16 +147,16 @@ class SoftActorCritic(nn.Module):
         num_critic_networks, batch_size = next_qs.shape
         assert num_critic_networks == self.num_critic_networks
 
-        # # TODO(student): Implement the different backup strategies.
-        # if self.target_critic_backup_type == "doubleq":
-        #     next_qs = torch.stack([next_qs[1], next_qs[0]])
+        # TODO(student): Implement the different backup strategies.
+        if self.target_critic_backup_type == "doubleq":
+            next_qs = torch.stack([next_qs[1], next_qs[0]])
 
-        # elif self.target_critic_backup_type == "min":
-        #     min_next_qs = torch.min(next_qs, dim=0).values
-        #     next_qs = min_next_qs.expand((num_critic_networks, batch_size))
-        # else:
-        #     # Default, we don't need to do anything.
-        #     pass
+        elif self.target_critic_backup_type == "min":
+            min_next_qs = torch.min(next_qs, dim=0).values
+            next_qs = min_next_qs.expand((num_critic_networks, batch_size))
+        else:
+            # Default, we don't need to do anything.
+            pass
 
 
         # If our backup strategy removed a dimension, add it back in explicitly
@@ -170,69 +170,6 @@ class SoftActorCritic(nn.Module):
         ), next_qs.shape
         return next_qs
     
-    # def update_critic(
-    #     self,
-    #     obs: torch.Tensor,
-    #     action: torch.Tensor,
-    #     reward: torch.Tensor,
-    #     next_obs: torch.Tensor,
-    #     done: torch.Tensor,
-    # ):
-    #     """
-    #     Update the critic networks by computing target values and minimizing Bellman error.
-    #     """
-    #     (batch_size,) = reward.shape
-
-    #     # Compute target values
-    #     # Important: we don't need gradients for target values!
-    #     with torch.no_grad():
-    #         # TODO(student)
-    #         # Sample from the actor
-    #         next_action_distribution: torch.distributions.Distribution = self.actor(next_obs)
-    #         next_action = next_action_distribution.sample()      
-
-    #         # Compute the next Q-values for the sampled actions
-    #         next_qs = ...
-
-    #         # Handle Q-values from multiple different target critic networks (if necessary)
-    #         # (For double-Q, clip-Q, etc.)
-    #         next_qs = self.q_backup_strategy(next_qs)
-
-    #         assert next_qs.shape == (
-    #             self.num_critic_networks,
-    #             batch_size,
-    #         ), next_qs.shape
-
-    #         if self.use_entropy_bonus and self.backup_entropy:
-    #             # TODO(student): Add entropy bonus to the target values for SAC
-    #             next_action_entropy = ...
-    #             next_qs += ...
-
-    #         # Compute the target Q-value
-    #         target_values: torch.Tensor = ...
-    #         assert target_values.shape == (
-    #             self.num_critic_networks,
-    #             batch_size
-    #         )
-
-    #     # TODO(student): Update the critic
-    #     # Predict Q-values
-    #     q_values = ...
-    #     assert q_values.shape == (self.num_critic_networks, batch_size), q_values.shape
-
-    #     # Compute loss
-    #     loss: torch.Tensor = ...
-
-    #     self.critic_optimizer.zero_grad()
-    #     loss.backward()
-    #     self.critic_optimizer.step()
-
-    #     return {
-    #         "critic_loss": loss.item(),
-    #         "q_values": q_values.mean().item(),
-    #         "target_values": target_values.mean().item(),
-    #     }
-
     def update_critic(
         self,
         obs: torch.Tensor,
@@ -393,9 +330,10 @@ class SoftActorCritic(nn.Module):
 
         # Add entropy if necessary
         if self.use_entropy_bonus:
-            action_distribution = self.actor(obs)
-            entropy = torch.mean(self.entropy(action_distribution))
-            loss = -self.temperature * entropy
+            # action_distribution = self.actor(obs)
+            # entropy = torch.mean(self.entropy(action_distribution))
+            # loss = -self.temperature * entropy
+            loss -= self.temperature * entropy
 
         self.actor_optimizer.zero_grad()
         loss.backward()
